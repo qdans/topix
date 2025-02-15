@@ -1,1 +1,1 @@
-import './pixelation-filter.js';
+import './components/pixelation-filter.js';
