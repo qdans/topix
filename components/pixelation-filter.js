@@ -3,6 +3,7 @@ class PixelationFilter extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" });
         this.pixelSize = 8;
+        this.scale = 1;
         this.render();
     }
 
@@ -19,18 +20,40 @@ class PixelationFilter extends HTMLElement {
                     border-radius: 10px;
                     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 }
-                canvas {
-                    max-width: 100%;
+                .canvas-container {
+                    overflow: hidden;
+                    width: 500px;
+                    height: 500px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
                     border: 2px solid #007bff;
                     border-radius: 5px;
-                    margin-top: 10px;
+                    position: relative;
+                }
+                canvas {
+                    max-width: 100%;
+                    max-height: 100%;
+                    transform: scale(1);
+                    transition: transform 0.3s ease;
                 }
                 input[type='range'] {
                     width: 80%;
                     margin: 10px 0;
                 }
-                button {
+                .controls {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
                     margin-top: 10px;
+                }
+                .download-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    margin-top: 10px;
+                }
+                button {
                     padding: 10px 15px;
                     border: none;
                     background-color: #007bff;
@@ -42,31 +65,28 @@ class PixelationFilter extends HTMLElement {
                 button:hover {
                     background-color: #0056b3;
                 }
-                .controls {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    margin-top: 10px;
-                }
                 select {
-                    margin-left: 10px;
-                    padding: 5px;
+                    padding: 8px;
                     border-radius: 5px;
                     border: 1px solid #ccc;
                 }
             </style>
             <input type="file" id="upload" accept="image/*" />
-            <canvas id="canvas"></canvas>
+            <div class="canvas-container">
+                <canvas id="canvas"></canvas>
+            </div>
             <div class="controls">
                 <label>Pixel Size: <span id="pixelValue">8</span></label>
                 <input type="range" id="pixelRange" min="2" max="50" value="8">
                 <button id="applyPixelation">Apply Pixelation</button>
-                <button id="downloadImage">Download</button>
-                <select id="formatSelect">
-                    <option value="png">PNG</option>
-                    <option value="jpg">JPG</option>
-                    <option value="webp">WebP</option>
-                </select>
+                <div class="download-container">
+                    <button id="downloadImage">Download</button>
+                    <select id="formatSelect">
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                        <option value="webp">WebP</option>
+                    </select>
+                </div>
             </div>
         `;
 
