@@ -9,6 +9,20 @@
 </head>
 <body>
     <h1>Topix - AI Powered Pixelation</h1>
-    <pixelation-filter></pixelation-filter>
+    <div class="container">
+        <input type="file" id="fileInput">
+        <pixelation-filter></pixelation-filter>
+        <div class="controls">
+            <label for="pixelSize">Pixel Size: <span id="pixelValue">0</span></label>
+            <input type="range" id="pixelSize" min="0" max="50" value="0">
+        </div>
+        <div class="download-section">
+            <button id="downloadBtn">Download</button>
+            <select id="formatSelect">
+                <option value="png">PNG</option>
+                <option value="jpg">JPG</option>
+            </select>
+        </div>
+    </div>
 </body>
 </html>
