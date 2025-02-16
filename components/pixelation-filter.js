@@ -2,7 +2,7 @@ class PixelationFilter extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
-        this.pixelSize = 8;
+        this.pixelSize = 0;
         this.originalImage = null;
         this.render();
     }
@@ -16,33 +16,27 @@ class PixelationFilter extends HTMLElement {
                     align-items: center;
                     font-family: Arial, sans-serif;
                     padding: 20px;
-                    background-color: #f8f9fa;
+                    background-color: white;
                     border-radius: 10px;
                     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    width: 100%;
                     max-width: 600px;
+                    margin: 0 auto;
                 }
                 .canvas-container {
-                    overflow: hidden;
-                    width: 500px;
-                    height: 500px;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
+                    width: 100%;
+                    max-width: 500px;
+                    height: auto;
                     border: 2px solid #007bff;
-                    border-radius: 5px;
-                    position: relative;
-                    background: white;
-                    margin-top: 10px;
+                    border-radius: 8px;
                     padding: 10px;
+                    margin: 15px 0;
+                    background: white;
                 }
                 canvas {
-                    max-width: 100%;
-                    max-height: 100%;
-                    transform: scale(1);
-                    transition: transform 0.3s ease;
+                    width: 100%;
+                    height: auto;
                 }
-                input[type='range'], select, button {
+                input[type='range'] {
                     width: 80%;
                     margin: 10px 0;
                 }
@@ -50,13 +44,12 @@ class PixelationFilter extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    margin-top: 15px;
                 }
                 .download-container {
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    margin-top: 15px;
+                    margin-top: 10px;
                 }
                 button {
                     padding: 10px 15px;
@@ -76,13 +69,13 @@ class PixelationFilter extends HTMLElement {
                     border: 1px solid #ccc;
                 }
             </style>
-            <input type="file" id="upload" accept="image/*" style="margin-bottom: 15px;">
+            <input type="file" id="upload" accept="image/*" />
             <div class="canvas-container">
                 <canvas id="canvas"></canvas>
             </div>
             <div class="controls">
-                <label>Pixel Size: <span id="pixelValue">8</span></label>
-                <input type="range" id="pixelRange" min="0" max="50" value="8">
+                <label>Pixel Size: <span id="pixelValue">0</span></label>
+                <input type="range" id="pixelRange" min="0" max="50" value="0">
                 <div class="download-container">
                     <button id="downloadImage">Download</button>
                     <select id="formatSelect">
@@ -149,8 +142,6 @@ class PixelationFilter extends HTMLElement {
     }
 
     downloadImage() {
-        if (!this.originalImage) return;
-        
         const format = this.formatSelect.value;
         const link = document.createElement("a");
         link.download = `pixelated_image.${format}`;
