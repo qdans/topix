@@ -3,7 +3,7 @@ class PixelationFilter extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" });
         this.pixelSize = 0;
-        this.scale = 1;
+        this.originalImage = null; // Menyimpan gambar asli
         this.render();
     }
 
@@ -114,6 +114,7 @@ class PixelationFilter extends HTMLElement {
             img.onload = () => {
                 this.canvas.width = img.width;
                 this.canvas.height = img.height;
+                this.originalImage = img; // Simpan gambar asli
                 this.ctx.drawImage(img, 0, 0);
             };
             img.src = e.target.result;
@@ -122,22 +123,30 @@ class PixelationFilter extends HTMLElement {
     }
 
     updatePixelSize(event) {
-        this.pixelSize = event.target.value;
+        this.pixelSize = parseInt(event.target.value, 10);
         this.pixelValue.textContent = this.pixelSize;
+        if (this.pixelSize === 0) {
+            this.restoreOriginalImage();
+        } else {
+            this.applyPixelation();
+        }
+    }
+
+    restoreOriginalImage() {
+        if (this.originalImage) {
+            this.ctx.drawImage(this.originalImage, 0, 0);
+        }
     }
 
     applyPixelation() {
-        if (this.pixelSize == 0) {
-            this.ctx.drawImage(this.canvas, 0, 0);
-            return;
-        }
+        if (!this.originalImage) return;
         const { width, height } = this.canvas;
         const tempCanvas = document.createElement("canvas");
         const tempCtx = tempCanvas.getContext("2d");
         tempCanvas.width = Math.ceil(width / this.pixelSize);
         tempCanvas.height = Math.ceil(height / this.pixelSize);
 
-        tempCtx.drawImage(this.canvas, 0, 0, tempCanvas.width, tempCanvas.height);
+        tempCtx.drawImage(this.originalImage, 0, 0, tempCanvas.width, tempCanvas.height);
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.drawImage(tempCanvas, 0, 0, width, height);
     }
