@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topix - AI Powered Pixelation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Topix - AI Powered Pixelation</h1>
+    <pixelation-filter></pixelation-filter>
+
+    <!-- Pastikan file skrip ada di jalur yang benar -->
+    <script defer src="./pixelation-filter.js"></script>
+    
+    <!-- Debugging: Tampilkan pesan jika script gagal dimuat -->
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (!customElements.get("pixelation-filter")) {
+                console.error("❌ pixelation-filter.js gagal dimuat atau ada kesalahan!");
+            } else {
+                console.log("✅ pixelation-filter.js berhasil dimuat.");
+            }
+        });
+    </script>
+</body>
+</html>
