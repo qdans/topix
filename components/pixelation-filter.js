@@ -1,82 +1,68 @@
+// pixelation-filter.js (Updated)
+
 class PixelationFilter extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
         this.imageSrc = "";
         this.pixelSize = 0;
-        this.canvas = document.createElement("canvas");
-        this.shadowRoot.appendChild(this.canvas);
     }
 
-    static get observedAttributes() {
-        return ["src", "pixel-size"];
+    connectedCallback() {
+        this.render();
     }
 
-    attributeChangedCallback(name, oldValue, newValue) {
-        if (name === "src") {
-            this.imageSrc = newValue;
-            this.loadImage();
-        } else if (name === "pixel-size") {
-            this.pixelSize = parseInt(newValue, 10);
-            this.applyPixelation();
-        }
+    set image(src) {
+        this.imageSrc = src;
+        this.render();
+    }
+
+    set pixel(size) {
+        this.pixelSize = size;
+        this.applyPixelation();
+    }
+
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>
+                canvas {
+                    max-width: 100%;
+                    border-radius: 10px;
+                    border: 1px solid #ddd;
+                }
+            </style>
+            <canvas></canvas>
+        `;
+        if (this.imageSrc) this.loadImage();
     }
 
     loadImage() {
+        const canvas = this.shadowRoot.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
         const img = new Image();
-        img.crossOrigin = "Anonymous";
-        img.onload = () => {
-            this.canvas.width = img.width;
-            this.canvas.height = img.height;
-            this.ctx = this.canvas.getContext("2d");
-            this.ctx.drawImage(img, 0, 0);
-            this.applyPixelation();
-        };
         img.src = this.imageSrc;
+        img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        };
     }
 
     applyPixelation() {
-        const { width, height } = this.canvas;
-        const ctx = this.ctx;
-        const pixelSize = this.pixelSize;
-
-        ctx.clearRect(0, 0, width, height);
+        const canvas = this.shadowRoot.querySelector("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!this.imageSrc || this.pixelSize === 0) {
+            this.loadImage();
+            return;
+        }
         const img = new Image();
         img.src = this.imageSrc;
         img.onload = () => {
-            if (pixelSize === 0) {
-                ctx.drawImage(img, 0, 0, width, height);
-                return;
-            }
-
-            ctx.drawImage(img, 0, 0, width, height);
-            const imageData = ctx.getImageData(0, 0, width, height);
-            const data = imageData.data;
-
-            for (let y = 0; y < height; y += pixelSize) {
-                for (let x = 0; x < width; x += pixelSize) {
-                    const index = (y * width + x) * 4;
-                    const red = data[index];
-                    const green = data[index + 1];
-                    const blue = data[index + 2];
-
-                    for (let dy = 0; dy < pixelSize; dy++) {
-                        for (let dx = 0; dx < pixelSize; dx++) {
-                            const pixelIndex = ((y + dy) * width + (x + dx)) * 4;
-                            data[pixelIndex] = red;
-                            data[pixelIndex + 1] = green;
-                            data[pixelIndex + 2] = blue;
-                        }
-                    }
-                }
-            }
-
-            ctx.putImageData(imageData, 0, 0);
+            const { width, height } = canvas;
+            const pixel = Math.max(this.pixelSize, 1);
+            ctx.drawImage(img, 0, 0, width / pixel, height / pixel);
+            ctx.drawImage(canvas, 0, 0, width / pixel, height / pixel, 0, 0, width, height);
         };
-    }
-
-    getCanvasImage(format) {
-        return this.canvas.toDataURL(`image/${format}`);
     }
 }
 
