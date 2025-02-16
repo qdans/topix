@@ -77,7 +77,7 @@ class PixelationFilter extends HTMLElement {
             </div>
             <div class="controls">
                 <label>Pixel Size: <span id="pixelValue">0</span></label>
-                <input type="range" id="pixelRange" min="0" max="50" value="0" step="1">
+                <input type="range" id="pixelRange" min="0" max="50" value="0">
                 <button id="applyPixelation">Apply Pixelation</button>
                 <div class="download-container">
                     <button id="downloadImage">Download</button>
@@ -122,15 +122,15 @@ class PixelationFilter extends HTMLElement {
     }
 
     updatePixelSize(event) {
-        this.pixelSize = parseInt(event.target.value, 10);
+        this.pixelSize = event.target.value;
         this.pixelValue.textContent = this.pixelSize;
     }
 
     applyPixelation() {
-        if (this.pixelSize === 0) {
-            return; // Tidak melakukan pixelation jika ukuran pixel 0
+        if (this.pixelSize == 0) {
+            this.ctx.drawImage(this.canvas, 0, 0);
+            return;
         }
-        
         const { width, height } = this.canvas;
         const tempCanvas = document.createElement("canvas");
         const tempCtx = tempCanvas.getContext("2d");
