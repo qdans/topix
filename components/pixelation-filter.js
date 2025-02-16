@@ -1,88 +1,83 @@
 class PixelationFilter extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.innerHTML = `
-            <style>
-                :host {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                .container {
-                    padding: 20px;
-                    border-radius: 10px;
-                    background: white;
-                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-                    text-align: center;
-                }
-                canvas {
-                    border: 1px solid blue;
-                    margin-bottom: 10px;
-                }
-            </style>
-            <div class="container">
-                <input type="file" id="upload" accept="image/*">
-                <canvas></canvas>
-                <label>Pixel Size: <span id="sizeLabel">0</span></label>
-                <input type="range" id="pixelSize" min="0" max="20" value="0">
-                <button id="download">Download</button>
-                <select id="format">
-                    <option value="png">PNG</option>
-                    <option value="jpeg">JPEG</option>
-                </select>
-            </div>
-        `;
-        this.canvas = this.shadowRoot.querySelector('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.fileInput = this.shadowRoot.querySelector('#upload');
-        this.pixelSizeInput = this.shadowRoot.querySelector('#pixelSize');
-        this.sizeLabel = this.shadowRoot.querySelector('#sizeLabel');
-        this.downloadBtn = this.shadowRoot.querySelector('#download');
-        this.formatSelect = this.shadowRoot.querySelector('#format');
-        
-        this.image = new Image();
-        this.fileInput.addEventListener('change', this.loadImage.bind(this));
-        this.pixelSizeInput.addEventListener('input', this.applyPixelation.bind(this));
-        this.downloadBtn.addEventListener('click', this.downloadImage.bind(this));
+        this.attachShadow({ mode: "open" });
+        this.imageSrc = "";
+        this.pixelSize = 0;
+        this.canvas = document.createElement("canvas");
+        this.shadowRoot.appendChild(this.canvas);
     }
 
-    loadImage(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                this.image.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
-            this.image.onload = () => this.drawImage();
+    static get observedAttributes() {
+        return ["src", "pixel-size"];
+    }
+
+    attributeChangedCallback(name, oldValue, newValue) {
+        if (name === "src") {
+            this.imageSrc = newValue;
+            this.loadImage();
+        } else if (name === "pixel-size") {
+            this.pixelSize = parseInt(newValue, 10);
+            this.applyPixelation();
         }
     }
 
-    drawImage() {
-        this.canvas.width = this.image.width;
-        this.canvas.height = this.image.height;
-        this.ctx.drawImage(this.image, 0, 0);
+    loadImage() {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => {
+            this.canvas.width = img.width;
+            this.canvas.height = img.height;
+            this.ctx = this.canvas.getContext("2d");
+            this.ctx.drawImage(img, 0, 0);
+            this.applyPixelation();
+        };
+        img.src = this.imageSrc;
     }
 
     applyPixelation() {
-        const size = parseInt(this.pixelSizeInput.value);
-        this.sizeLabel.textContent = size;
-        this.drawImage();
-        if (size > 0) {
-            let w = this.canvas.width;
-            let h = this.canvas.height;
-            this.ctx.drawImage(this.canvas, 0, 0, w / size, h / size);
-            this.ctx.drawImage(this.canvas, 0, 0, w / size, h / size, 0, 0, w, h);
-        }
+        const { width, height } = this.canvas;
+        const ctx = this.ctx;
+        const pixelSize = this.pixelSize;
+
+        ctx.clearRect(0, 0, width, height);
+        const img = new Image();
+        img.src = this.imageSrc;
+        img.onload = () => {
+            if (pixelSize === 0) {
+                ctx.drawImage(img, 0, 0, width, height);
+                return;
+            }
+
+            ctx.drawImage(img, 0, 0, width, height);
+            const imageData = ctx.getImageData(0, 0, width, height);
+            const data = imageData.data;
+
+            for (let y = 0; y < height; y += pixelSize) {
+                for (let x = 0; x < width; x += pixelSize) {
+                    const index = (y * width + x) * 4;
+                    const red = data[index];
+                    const green = data[index + 1];
+                    const blue = data[index + 2];
+
+                    for (let dy = 0; dy < pixelSize; dy++) {
+                        for (let dx = 0; dx < pixelSize; dx++) {
+                            const pixelIndex = ((y + dy) * width + (x + dx)) * 4;
+                            data[pixelIndex] = red;
+                            data[pixelIndex + 1] = green;
+                            data[pixelIndex + 2] = blue;
+                        }
+                    }
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        };
     }
 
-    downloadImage() {
-        const format = this.formatSelect.value;
-        const link = document.createElement('a');
-        link.download = `pixelated.${format}`;
-        link.href = this.canvas.toDataURL(`image/${format}`);
-        link.click();
+    getCanvasImage(format) {
+        return this.canvas.toDataURL(`image/${format}`);
     }
 }
-customElements.define('pixelation-filter', PixelationFilter);
+
+customElements.define("pixelation-filter", PixelationFilter);
