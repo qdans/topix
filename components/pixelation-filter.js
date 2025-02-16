@@ -1,153 +1,88 @@
 class PixelationFilter extends HTMLElement {
     constructor() {
         super();
-        this.attachShadow({ mode: "open" });
-        this.pixelSize = 0;
-        this.originalImage = null;
-        this.render();
-    }
-
-    render() {
+        this.attachShadow({ mode: 'open' });
         this.shadowRoot.innerHTML = `
             <style>
                 :host {
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    font-family: Arial, sans-serif;
-                    padding: 20px;
-                    background-color: white;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    max-width: 600px;
-                    margin: 0 auto;
                 }
-                .canvas-container {
-                    width: 100%;
-                    max-width: 500px;
-                    height: auto;
-                    border: 2px solid #007bff;
-                    border-radius: 8px;
-                    padding: 10px;
-                    margin: 15px 0;
+                .container {
+                    padding: 20px;
+                    border-radius: 10px;
                     background: white;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                    text-align: center;
                 }
                 canvas {
-                    width: 100%;
-                    height: auto;
-                }
-                input[type='range'] {
-                    width: 80%;
-                    margin: 10px 0;
-                }
-                .controls {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                }
-                .download-container {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    margin-top: 10px;
-                }
-                button {
-                    padding: 10px 15px;
-                    border: none;
-                    background-color: #007bff;
-                    color: white;
-                    cursor: pointer;
-                    border-radius: 5px;
-                    transition: background 0.3s;
-                }
-                button:hover {
-                    background-color: #0056b3;
-                }
-                select {
-                    padding: 8px;
-                    border-radius: 5px;
-                    border: 1px solid #ccc;
+                    border: 1px solid blue;
+                    margin-bottom: 10px;
                 }
             </style>
-            <input type="file" id="upload" accept="image/*" />
-            <div class="canvas-container">
-                <canvas id="canvas"></canvas>
-            </div>
-            <div class="controls">
-                <label>Pixel Size: <span id="pixelValue">0</span></label>
-                <input type="range" id="pixelRange" min="0" max="50" value="0">
-                <div class="download-container">
-                    <button id="downloadImage">Download</button>
-                    <select id="formatSelect">
-                        <option value="png">PNG</option>
-                        <option value="jpg">JPG</option>
-                        <option value="webp">WebP</option>
-                    </select>
-                </div>
+            <div class="container">
+                <input type="file" id="upload" accept="image/*">
+                <canvas></canvas>
+                <label>Pixel Size: <span id="sizeLabel">0</span></label>
+                <input type="range" id="pixelSize" min="0" max="20" value="0">
+                <button id="download">Download</button>
+                <select id="format">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
             </div>
         `;
-
-        this.canvas = this.shadowRoot.getElementById("canvas");
-        this.ctx = this.canvas.getContext("2d");
-        this.uploadInput = this.shadowRoot.getElementById("upload");
-        this.pixelRange = this.shadowRoot.getElementById("pixelRange");
-        this.pixelValue = this.shadowRoot.getElementById("pixelValue");
-        this.downloadButton = this.shadowRoot.getElementById("downloadImage");
-        this.formatSelect = this.shadowRoot.getElementById("formatSelect");
-
-        this.uploadInput.addEventListener("change", (e) => this.loadImage(e));
-        this.pixelRange.addEventListener("input", (e) => this.updatePixelSize(e));
-        this.downloadButton.addEventListener("click", () => this.downloadImage());
+        this.canvas = this.shadowRoot.querySelector('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.fileInput = this.shadowRoot.querySelector('#upload');
+        this.pixelSizeInput = this.shadowRoot.querySelector('#pixelSize');
+        this.sizeLabel = this.shadowRoot.querySelector('#sizeLabel');
+        this.downloadBtn = this.shadowRoot.querySelector('#download');
+        this.formatSelect = this.shadowRoot.querySelector('#format');
+        
+        this.image = new Image();
+        this.fileInput.addEventListener('change', this.loadImage.bind(this));
+        this.pixelSizeInput.addEventListener('input', this.applyPixelation.bind(this));
+        this.downloadBtn.addEventListener('click', this.downloadImage.bind(this));
     }
 
     loadImage(event) {
         const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.originalImage = new Image();
-            this.originalImage.onload = () => {
-                this.canvas.width = this.originalImage.width;
-                this.canvas.height = this.originalImage.height;
-                this.ctx.drawImage(this.originalImage, 0, 0);
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                this.image.src = e.target.result;
             };
-            this.originalImage.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
+            this.image.onload = () => this.drawImage();
+        }
     }
 
-    updatePixelSize(event) {
-        this.pixelSize = event.target.value;
-        this.pixelValue.textContent = this.pixelSize;
-        this.applyPixelation();
+    drawImage() {
+        this.canvas.width = this.image.width;
+        this.canvas.height = this.image.height;
+        this.ctx.drawImage(this.image, 0, 0);
     }
 
     applyPixelation() {
-        if (!this.originalImage) return;
-        
-        const { width, height } = this.canvas;
-        if (this.pixelSize == 0) {
-            this.ctx.drawImage(this.originalImage, 0, 0);
-            return;
+        const size = parseInt(this.pixelSizeInput.value);
+        this.sizeLabel.textContent = size;
+        this.drawImage();
+        if (size > 0) {
+            let w = this.canvas.width;
+            let h = this.canvas.height;
+            this.ctx.drawImage(this.canvas, 0, 0, w / size, h / size);
+            this.ctx.drawImage(this.canvas, 0, 0, w / size, h / size, 0, 0, w, h);
         }
-        
-        const tempCanvas = document.createElement("canvas");
-        const tempCtx = tempCanvas.getContext("2d");
-        tempCanvas.width = Math.ceil(width / this.pixelSize);
-        tempCanvas.height = Math.ceil(height / this.pixelSize);
-
-        tempCtx.drawImage(this.originalImage, 0, 0, tempCanvas.width, tempCanvas.height);
-        this.ctx.imageSmoothingEnabled = false;
-        this.ctx.drawImage(tempCanvas, 0, 0, width, height);
     }
 
     downloadImage() {
         const format = this.formatSelect.value;
-        const link = document.createElement("a");
-        link.download = `pixelated_image.${format}`;
+        const link = document.createElement('a');
+        link.download = `pixelated.${format}`;
         link.href = this.canvas.toDataURL(`image/${format}`);
         link.click();
     }
 }
-
-customElements.define("pixelation-filter", PixelationFilter);
+customElements.define('pixelation-filter', PixelationFilter);
