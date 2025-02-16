@@ -2,8 +2,9 @@ class PixelationFilter extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
-        this.pixelSize = 0;
-        this.originalImage = null; // Menyimpan gambar asli
+        this.pixelSize = 8;
+        this.scale = 1;
+        this.originalImage = null;
         this.render();
     }
 
@@ -76,9 +77,8 @@ class PixelationFilter extends HTMLElement {
                 <canvas id="canvas"></canvas>
             </div>
             <div class="controls">
-                <label>Pixel Size: <span id="pixelValue">0</span></label>
-                <input type="range" id="pixelRange" min="0" max="50" value="0">
-                <button id="applyPixelation">Apply Pixelation</button>
+                <label>Pixel Size: <span id="pixelValue">8</span></label>
+                <input type="range" id="pixelRange" min="0" max="50" value="8">
                 <div class="download-container">
                     <button id="downloadImage">Download</button>
                     <select id="formatSelect">
@@ -95,13 +95,11 @@ class PixelationFilter extends HTMLElement {
         this.uploadInput = this.shadowRoot.getElementById("upload");
         this.pixelRange = this.shadowRoot.getElementById("pixelRange");
         this.pixelValue = this.shadowRoot.getElementById("pixelValue");
-        this.applyButton = this.shadowRoot.getElementById("applyPixelation");
         this.downloadButton = this.shadowRoot.getElementById("downloadImage");
         this.formatSelect = this.shadowRoot.getElementById("formatSelect");
 
         this.uploadInput.addEventListener("change", (e) => this.loadImage(e));
         this.pixelRange.addEventListener("input", (e) => this.updatePixelSize(e));
-        this.applyButton.addEventListener("click", () => this.applyPixelation());
         this.downloadButton.addEventListener("click", () => this.downloadImage());
     }
 
@@ -110,37 +108,32 @@ class PixelationFilter extends HTMLElement {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                this.canvas.width = img.width;
-                this.canvas.height = img.height;
-                this.originalImage = img; // Simpan gambar asli
-                this.ctx.drawImage(img, 0, 0);
+            this.originalImage = new Image();
+            this.originalImage.onload = () => {
+                this.canvas.width = this.originalImage.width;
+                this.canvas.height = this.originalImage.height;
+                this.ctx.drawImage(this.originalImage, 0, 0);
             };
-            img.src = e.target.result;
+            this.originalImage.src = e.target.result;
         };
         reader.readAsDataURL(file);
     }
 
     updatePixelSize(event) {
-        this.pixelSize = parseInt(event.target.value, 10);
+        this.pixelSize = event.target.value;
         this.pixelValue.textContent = this.pixelSize;
-        if (this.pixelSize === 0) {
-            this.restoreOriginalImage();
-        } else {
-            this.applyPixelation();
-        }
-    }
-
-    restoreOriginalImage() {
-        if (this.originalImage) {
-            this.ctx.drawImage(this.originalImage, 0, 0);
-        }
+        this.applyPixelation();
     }
 
     applyPixelation() {
         if (!this.originalImage) return;
+        
         const { width, height } = this.canvas;
+        if (this.pixelSize == 0) {
+            this.ctx.drawImage(this.originalImage, 0, 0);
+            return;
+        }
+        
         const tempCanvas = document.createElement("canvas");
         const tempCtx = tempCanvas.getContext("2d");
         tempCanvas.width = Math.ceil(width / this.pixelSize);
