@@ -3,8 +3,7 @@ class PixelationFilter extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" });
         this.pixelSize = 8;
-        this.scale = 1;
-        this.originalImage = null;
+        this.originalImage = new Image();
         this.render();
     }
 
@@ -106,6 +105,7 @@ class PixelationFilter extends HTMLElement {
     loadImage(event) {
         const file = event.target.files[0];
         if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (e) => {
             this.originalImage = new Image();
@@ -120,22 +120,29 @@ class PixelationFilter extends HTMLElement {
     }
 
     updatePixelSize(event) {
-        this.pixelSize = event.target.value;
+        this.pixelSize = parseInt(event.target.value, 10);
         this.pixelValue.textContent = this.pixelSize;
-        this.applyPixelation();
+        
+        if (this.pixelSize === 0) {
+            this.restoreOriginal();
+        } else {
+            this.applyPixelation();
+        }
+    }
+
+    restoreOriginal() {
+        if (this.originalImage) {
+            this.ctx.drawImage(this.originalImage, 0, 0);
+        }
     }
 
     applyPixelation() {
-        if (!this.originalImage) return;
-        
+        if (!this.originalImage || this.pixelSize <= 0) return;
+
         const { width, height } = this.canvas;
-        if (this.pixelSize == 0) {
-            this.ctx.drawImage(this.originalImage, 0, 0);
-            return;
-        }
-        
         const tempCanvas = document.createElement("canvas");
         const tempCtx = tempCanvas.getContext("2d");
+
         tempCanvas.width = Math.ceil(width / this.pixelSize);
         tempCanvas.height = Math.ceil(height / this.pixelSize);
 
