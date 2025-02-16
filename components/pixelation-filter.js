@@ -48,107 +48,48 @@ class PixelationFilter extends HTMLElement {
                     align-items: center;
                     margin-top: 10px;
                 }
-                .download-container {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    margin-top: 10px;
-                }
-                button {
-                    padding: 10px 15px;
-                    border: none;
-                    background-color: #007bff;
-                    color: white;
-                    cursor: pointer;
-                    border-radius: 5px;
-                    transition: background 0.3s;
-                }
-                button:hover {
-                    background-color: #0056b3;
-                }
-                select {
-                    padding: 8px;
-                    border-radius: 5px;
-                    border: 1px solid #ccc;
-                }
             </style>
-            <input type="file" id="upload" accept="image/*" />
             <div class="canvas-container">
-                <canvas id="canvas"></canvas>
+                <canvas id="pixelCanvas"></canvas>
             </div>
             <div class="controls">
-                <label>Pixel Size: <span id="pixelValue">8</span></label>
-                <input type="range" id="pixelRange" min="0" max="50" value="8">
-                <div class="download-container">
-                    <button id="downloadImage">Download</button>
-                    <select id="formatSelect">
-                        <option value="png">PNG</option>
-                        <option value="jpg">JPG</option>
-                        <option value="webp">WebP</option>
-                    </select>
-                </div>
+                <input type="range" min="2" max="50" value="8" id="pixelSizeSlider">
+                <button id="downloadButton">Download</button>
             </div>
         `;
 
-        this.canvas = this.shadowRoot.getElementById("canvas");
+        this.canvas = this.shadowRoot.querySelector("#pixelCanvas");
         this.ctx = this.canvas.getContext("2d");
-        this.uploadInput = this.shadowRoot.getElementById("upload");
-        this.pixelRange = this.shadowRoot.getElementById("pixelRange");
-        this.pixelValue = this.shadowRoot.getElementById("pixelValue");
-        this.downloadButton = this.shadowRoot.getElementById("downloadImage");
-        this.formatSelect = this.shadowRoot.getElementById("formatSelect");
+        this.pixelSizeSlider = this.shadowRoot.querySelector("#pixelSizeSlider");
+        this.downloadButton = this.shadowRoot.querySelector("#downloadButton");
 
-        this.uploadInput.addEventListener("change", (e) => this.loadImage(e));
-        this.pixelRange.addEventListener("input", (e) => this.updatePixelSize(e));
+        this.pixelSizeSlider.addEventListener("input", (e) => {
+            this.pixelSize = parseInt(e.target.value);
+            this.applyPixelation();
+        });
+
         this.downloadButton.addEventListener("click", () => this.downloadImage());
-    }
-
-    loadImage(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            this.originalImage = new Image();
-            this.originalImage.onload = () => {
-                this.canvas.width = this.originalImage.width;
-                this.canvas.height = this.originalImage.height;
-                this.ctx.drawImage(this.originalImage, 0, 0);
-            };
-            this.originalImage.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    updatePixelSize(event) {
-        this.pixelSize = event.target.value;
-        this.pixelValue.textContent = this.pixelSize;
-        this.applyPixelation();
     }
 
     applyPixelation() {
         if (!this.originalImage) return;
-        
-        const { width, height } = this.canvas;
-        if (this.pixelSize == 0) {
-            this.ctx.drawImage(this.originalImage, 0, 0);
-            return;
-        }
-        
-        const tempCanvas = document.createElement("canvas");
-        const tempCtx = tempCanvas.getContext("2d");
-        tempCanvas.width = Math.ceil(width / this.pixelSize);
-        tempCanvas.height = Math.ceil(height / this.pixelSize);
 
-        tempCtx.drawImage(this.originalImage, 0, 0, tempCanvas.width, tempCanvas.height);
+        const width = this.originalImage.width;
+        const height = this.originalImage.height;
+
+        // Gunakan OffscreenCanvas untuk optimasi performa
+        let offscreenCanvas = new OffscreenCanvas(width, height);
+        let offCtx = offscreenCanvas.getContext("2d");
+
+        offCtx.drawImage(this.originalImage, 0, 0, width / this.pixelSize, height / this.pixelSize);
         this.ctx.imageSmoothingEnabled = false;
-        this.ctx.drawImage(tempCanvas, 0, 0, width, height);
+        this.ctx.drawImage(offscreenCanvas, 0, 0, width, height);
     }
 
     downloadImage() {
-        const format = this.formatSelect.value;
         const link = document.createElement("a");
-        link.download = `pixelated_image.${format}`;
-        link.href = this.canvas.toDataURL(`image/${format}`);
+        link.download = "pixelated_image.png";
+        link.href = this.canvas.toDataURL("image/png");
         link.click();
     }
 }
